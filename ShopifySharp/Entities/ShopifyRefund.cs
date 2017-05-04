@@ -23,6 +23,12 @@ namespace ShopifySharp
         public IEnumerable<ShopifyRefundOrderAdjustment> OrderAdjustments { get; set; }
 
         /// <summary>
+        /// The unique identifier of the order associated with this refund
+        /// </summary>
+        [JsonProperty("order_id")]
+        public long OrderId { get; set; }
+
+        /// <summary>
         /// The date and time when the refund was imported.
         /// </summary>
         /// <remarks>
