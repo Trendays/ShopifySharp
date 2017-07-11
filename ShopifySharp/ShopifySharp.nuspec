@@ -295,7 +295,7 @@
 
 	- Bugfix: ShopifyOrder.PaymentDetails was missing.
     </releaseNotes>
-    <copyright>Copyright 2015</copyright>
+    <copyright>Copyright 2017</copyright>
     <tags>Shopify</tags>
   </metadata>
 </package>
