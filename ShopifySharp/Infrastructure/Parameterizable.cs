@@ -1,12 +1,8 @@
 ﻿using Newtonsoft.Json;
-using RestSharp;
 using System;
 using System.Collections.Generic;
-using System.Data.Metadata.Edm;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ShopifySharp
 {
@@ -16,15 +12,17 @@ namespace ShopifySharp
     public abstract class Parameterizable
     {
         /// <summary>
-        /// Converts the object to an array of RestSharp parameters.
+        /// Converts the object to an array of KVPs.
         /// </summary>
-        /// <returns>The array of RestSharp parameters.</returns>
-        public IEnumerable<Parameter> ToParameters(ParameterType type)
+        public virtual IEnumerable<KeyValuePair<string, object>> ToParameters()
         {
-            List<Parameter> output = new List<Parameter>();
+            var output = new List<KeyValuePair<string, object>>();
+
+            // TODO: Create a recursive function that will aggregate the declaredproperties for
+            // this type and this type's base type (and that type's base type, and so on).
 
             //Inspiration for this code from https://github.com/jaymedavis/stripe.net
-            foreach (PropertyInfo property in GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            foreach (PropertyInfo property in GetType().GetAllDeclaredProperties())
             {
                 object value = property.GetValue(this, null);
                 string propName = property.Name;
@@ -42,7 +40,7 @@ namespace ShopifySharp
                     propName = attribute != null ? attribute.PropertyName : property.Name;
                 }
 
-                var parameter = ToSingleParameter(propName, value, property, type);
+                var parameter = ToSingleParameter(propName, value, property);
 
                 output.Add(parameter);
             }
@@ -51,37 +49,40 @@ namespace ShopifySharp
         }
 
         /// <summary>
-        /// Converts the given property and value to a parameter. Can be overriden to customize parameterization of a property. 
-        /// Will NOT be called by the <see cref="Parameterizable.ToParameters(ParameterType)"/> method if the value 
+        /// Converts the given property and value to a KeyValuePair for use as a query parameter. Can be overriden to customize parameterization of a property.
+        /// Will NOT be called by the <see cref="Parameterizable.ToParameters(ParameterType)"/> method if the value
         /// is null.
         /// </summary>
-        /// <param name="propName">The name of the property. Will match the property's <see cref="JsonPropertyAttribute"/> name — 
+        /// <param name="propName">The name of the property. Will match the property's <see cref="JsonPropertyAttribute"/> name —
         /// rather than the real property name — where applicable. Use <paramref name="property"/>.Name to get the real name.</param>
         /// <param name="value">The property's value.</param>
         /// <param name="property">The property itself.</param>
-        /// <param name="type">The type of parameter to create.</param>
         /// <returns>The new parameter.</returns>
-        public virtual Parameter ToSingleParameter(string propName, object value, PropertyInfo property, ParameterType type)
+        public virtual KeyValuePair<string, object> ToSingleParameter(string propName, object value, PropertyInfo property)
         {
+            if (value is IEnumerable<long>)
+            {
+                return new KeyValuePair<string, object>(propName, string.Join(",", value as IEnumerable<long>));
+            }
+
             Type valueType = value.GetType();
 
-            if (valueType.IsEnum)
+            if (valueType.GetTypeInfo().IsEnum)
             {
                 value = ((Enum)value).ToSerializedString();
             }
 
-            if (valueType == typeof(DateTime))
+            //Dates must be serialized in YYYY-MM-DD HH:MM format.
+            if (valueType == typeof(DateTime) || valueType == typeof(DateTime?))
             {
-                //Dates must be serialized in YYYY-MM-DD HH:MM format.
                 value = ((DateTime)value).ToString("o");
             }
-
-            return new Parameter()
+            else if (valueType == typeof(DateTimeOffset) || valueType == typeof(DateTimeOffset?))
             {
-                Name = propName,
-                Value = value,
-                Type = type
-            };
+                value = ((DateTimeOffset)value).ToString("o");
+            }
+
+            return new KeyValuePair<string, object>(propName, value);
         }
     }
 }

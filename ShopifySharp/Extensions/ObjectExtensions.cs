@@ -3,8 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ShopifySharp
 {
@@ -19,7 +17,7 @@ namespace ShopifySharp
             IDictionary<string, object> output = new Dictionary<string, object>();
 
             //Inspiration for this code from https://github.com/jaymedavis/stripe.net
-            foreach (PropertyInfo property in obj.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            foreach (PropertyInfo property in obj.GetType().GetAllDeclaredProperties())
             {
                 object value = property.GetValue(obj, null);
                 string propName = property.Name;
@@ -33,7 +31,7 @@ namespace ShopifySharp
                     propName = attribute != null ? attribute.PropertyName : property.Name;
                 }
 
-                if (value.GetType().IsEnum)
+                if (value.GetType().GetTypeInfo().IsEnum)
                 {
                     value = ((Enum)value).ToSerializedString();
                 }

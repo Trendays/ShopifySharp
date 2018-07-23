@@ -1,13 +1,16 @@
-﻿using RestSharp;
+﻿using System.Net.Http;
 using System.Threading.Tasks;
+using ShopifySharp.Infrastructure;
 
 namespace ShopifySharp
 {
     public class DefaultRequestExecutionPolicy : IRequestExecutionPolicy
     {
-        public async Task<T> Run<T>(IRestClient client, IRestRequest request, ExecuteRequestAsync<T> executeRequestAsync)
+        public async Task<T> Run<T>(CloneableRequestMessage request, ExecuteRequestAsync<T> executeRequestAsync)
         {
-            return (await executeRequestAsync()).Result;
+            var fullResult = await executeRequestAsync(request);
+
+            return fullResult.Result;
         }
     }
 }

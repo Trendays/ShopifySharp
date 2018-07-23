@@ -1,8 +1,10 @@
-﻿using RestSharp;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using ShopifySharp.Infrastructure;
 
 namespace ShopifySharp
 {
@@ -23,14 +25,16 @@ namespace ShopifySharp
     public partial class SmartRetryExecutionPolicy : IRequestExecutionPolicy
     {
         private const string RESPONSE_HEADER_API_CALL_LIMIT = "X-Shopify-Shop-Api-Call-Limit";
+
         private const string REQUEST_HEADER_ACCESS_TOKEN = "X-Shopify-Access-Token";
+
         private static readonly TimeSpan THROTTLE_DELAY = TimeSpan.FromMilliseconds(500);
 
         private static ConcurrentDictionary<string, LeakyBucket> _shopAccessTokenToLeakyBucket = new ConcurrentDictionary<string, LeakyBucket>();
 
-        public async Task<T> Run<T>(IRestClient client, IRestRequest request, ExecuteRequestAsync<T> executeRequestAsync)
+        public async Task<T> Run<T>(CloneableRequestMessage baseRequest, ExecuteRequestAsync<T> executeRequestAsync)
         {
-            string accessToken = this.GetAccessToken(client);
+            var accessToken = GetAccessToken(baseRequest);
             LeakyBucket bucket = null;
 
             if (accessToken != null)
@@ -38,58 +42,62 @@ namespace ShopifySharp
                 bucket = _shopAccessTokenToLeakyBucket.GetOrAdd(accessToken, _ => new LeakyBucket());
             }
 
-            Start:
-            if (accessToken != null)
+            while (true)
             {
-                await bucket.GrantAsync();
-            }
-            try
-            {
-                var requestResult = await executeRequestAsync();
-                int? bucketContentSize = this.GetBucketContentSize(requestResult.Response);
+                var request = baseRequest.Clone();
 
-                if (bucketContentSize != null)
+                if (accessToken != null)
                 {
-                    bucket?.SetContentSize(bucketContentSize.Value);
+                    await bucket.GrantAsync();
                 }
 
-                return requestResult.Result;
-            }
-            catch (ShopifyRateLimitException)
-            {
-                //An exception may still occur:
-                //-Shopify may have a slightly different algorithm
-                //-Shopify may change to a different algorithm in the future
-                //-There may be timing and latency delays
-                //-Multiple programs may use the same access token
-                //-Multiple instance of the same program may use the same access token
-                await Task.Delay(THROTTLE_DELAY);
-                goto Start;
+                try
+                {
+                    var fullResult = await executeRequestAsync(request);
+                    var bucketState = this.GetBucketState(fullResult.Response);
+
+                    if (bucketState != null)
+                    {
+                        bucket?.SetState(bucketState);
+                    }
+
+                    return fullResult.Result;
+                }
+                catch (ShopifyRateLimitException)
+                {
+                    //An exception may still occur:
+                    //-Shopify may have a slightly different algorithm
+                    //-Shopify may change to a different algorithm in the future
+                    //-There may be timing and latency delays
+                    //-Multiple programs may use the same access token
+                    //-Multiple instances of the same program may use the same access token
+                    await Task.Delay(THROTTLE_DELAY);
+                }
             }
         }
 
-        private string GetAccessToken(IRestClient client)
+        private string GetAccessToken(HttpRequestMessage client)
         {
-            return client.DefaultParameters
-                .SingleOrDefault(p => p.Type == ParameterType.HttpHeader && p.Name == REQUEST_HEADER_ACCESS_TOKEN)
-                ?.Value
-                ?.ToString();
+            IEnumerable<string> values = new List<string>();
+
+            return client.Headers.TryGetValues(REQUEST_HEADER_ACCESS_TOKEN, out values) ?
+                values.FirstOrDefault() :
+                null;
         }
 
-        private int? GetBucketContentSize(IRestResponse response)
+        private LeakyBucketState GetBucketState(HttpResponseMessage response)
         {
-            string apiCallLimitHeaderValue = response.Headers
-                .FirstOrDefault(p => p.Name == RESPONSE_HEADER_API_CALL_LIMIT)
-                ?.Value
-                ?.ToString();
+            var headers = response.Headers.FirstOrDefault(kvp => kvp.Key == RESPONSE_HEADER_API_CALL_LIMIT);
+            var apiCallLimitHeaderValue = headers.Value?.FirstOrDefault();
 
             if (apiCallLimitHeaderValue != null)
             {
-                int bucketContentSize;
-
-                if (int.TryParse(apiCallLimitHeaderValue.Split('/').First(), out bucketContentSize))
+                var split = apiCallLimitHeaderValue.Split('/');
+                if (split.Length == 2 &&
+                    int.TryParse(split[0], out int currentFillLevel) &&
+                    int.TryParse(split[1], out int capacity))
                 {
-                    return bucketContentSize;
+                    return new LeakyBucketState(capacity, currentFillLevel);
                 }
             }
 
