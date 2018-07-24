@@ -16,6 +16,12 @@ namespace ShopifySharp
         public string Address1 { get; set; }
 
         /// <summary>
+        /// The the optional second line of the shop's street address.
+        /// </summary>
+        [JsonProperty("address2")]
+        public string Address2 { get; set; }
+
+        /// <summary>
         /// The city in which the shop is located.
         /// </summary>
         [JsonProperty("city")]
@@ -44,6 +50,12 @@ namespace ShopifySharp
         /// </summary>
         [JsonProperty("created_at")]
         public DateTimeOffset? CreatedAt { get; set; }
+
+        /// <summary>
+        ///The date and time when the shop was last updated.
+        /// </summary>
+        [JsonProperty("updated_at")]
+        public DateTimeOffset? UpdatedAt { get; set; }
 
         /// <summary>
         /// The customer's email.
@@ -142,6 +154,18 @@ namespace ShopifySharp
         public string PlanName { get; set; }
 
         /// <summary>
+        /// Whether any active discounts exist for the shop.
+        /// </summary>
+        [JsonProperty("has_discounts")]
+        public bool? HasDiscounts { get; set; }
+
+        /// <summary>
+        /// Whether any active gift cards exist for the shop.
+        /// </summary>
+        [JsonProperty("has_gift_cards")]
+        public bool? HasGiftCards { get; set; }
+
+        /// <summary>
         /// The display name of the Shopify plan the shop is on.
         /// </summary>
         [JsonProperty("plan_display_name")]
@@ -152,6 +176,12 @@ namespace ShopifySharp
         /// </summary>
         [JsonProperty("password_enabled")]
         public bool? PasswordEnabled { get; set; }
+
+        /// <summary>
+        /// Whether the pre-launch page is enabled on the online storefront.
+        /// </summary>
+        [JsonProperty("pre_launch_enabled")]
+        public bool? PreLaunchEnabled { get; set; }
 
         /// <summary>
         /// The contact phone number for the shop.
