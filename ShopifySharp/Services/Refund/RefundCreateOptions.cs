@@ -7,16 +7,16 @@ using System.Threading.Tasks;
 
 namespace ShopifySharp
 {
-    public class ShopifyRefundCreateOptions : Parameterizable
+    public class RefundCreateOptions : Parameterizable
     {
         [JsonProperty("shipping")]
-        public ShopifyRefundShippingDto Shipping { get; set; }
+        public RefundShippingDto Shipping { get; set; }
 
         [JsonProperty("discrepancy_reason")]
         public string DiscrepancyReason { get; set; }
     }
 
-    public class ShopifyRefundShippingDto : Parameterizable
+    public class RefundShippingDto : Parameterizable
     {
         [JsonProperty("full_refund")]
         public bool? FullRefund { get; set; }

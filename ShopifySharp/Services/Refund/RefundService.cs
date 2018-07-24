@@ -1,20 +1,21 @@
-﻿using RestSharp;
+﻿using ShopifySharp.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace ShopifySharp
 {
-    public class ShopifyRefundService : ShopifyService
+    public class RefundService : ShopifyService
     {
         /// <summary>
-        /// Creates a new instance of <see cref="ShopifyRefundService" />.
+        /// Creates a new instance of <see cref="RefundService" />.
         /// </summary>
         /// <param name="myShopifyUrl">The shop's *.myshopify.com URL.</param>
         /// <param name="shopAccessToken">An API access token for the shop.</param>
-        public ShopifyRefundService(string myShopifyUrl, string shopAccessToken) : base(myShopifyUrl, shopAccessToken) { }
+        public RefundService(string myShopifyUrl, string shopAccessToken) : base(myShopifyUrl, shopAccessToken) { }
 
         /// <summary>
         /// Creates a new <see cref="ShopifyRefund"/> on the store.
@@ -22,9 +23,9 @@ namespace ShopifySharp
         /// <param name="order">A new <see cref="ShopifyRefund"/>. Id should be set to null.</param>
         /// <param name="options">Options for creating the order.</param>
         /// <returns>The new <see cref="ShopifyOrder"/>.</returns>
-        public virtual async Task<ShopifyRefund> CreateAsync(long orderId, ShopifyRefund refund, ShopifyRefundCreateOptions options = null)
+        public virtual async Task<Refund> CreateAsync(long orderId, Refund refund, RefundCreateOptions options = null)
         {
-            IRestRequest req = RequestEngine.CreateRequest($"orders/{orderId}/refunds.json", Method.POST, "refund");
+            var req = PrepareRequest($"orders/{orderId}/refunds.json");
             var body = refund.ToDictionary();
 
             if (options != null)
@@ -36,12 +37,12 @@ namespace ShopifySharp
             }
 
             //Build the request body
-            req.AddJsonBody(new
+            var content = new JsonContent(new
             {
                 refund = body
             });
 
-            return await RequestEngine.ExecuteRequestAsync<ShopifyRefund>(_RestClient, req);
+            return await ExecuteRequestAsync<Refund>(req, HttpMethod.Post, content, "refund");
         }
     }
 }
