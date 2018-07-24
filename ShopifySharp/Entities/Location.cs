@@ -43,12 +43,24 @@ namespace ShopifySharp
         /// </summary>
         [JsonProperty("province")]
         public string Province { get; set; }
+        
+        /// <summary>
+        /// The two-letter code corresponding to province or state the location is in.
+        /// </summary>
+        [JsonProperty("province_code")]
+        public string ProvinceCode { get; set; }
 
         /// <summary>
         /// The country the location is in.
         /// </summary>
         [JsonProperty("country")]
         public string Country { get; set; }
+
+        /// <summary>
+        /// The two-letter code (ISO 3166-1 alpha-2 format) corresponding to country the location is in.
+        /// </summary>
+        [JsonProperty("country_code")]
+        public string CountryCode { get; set; }
 
         /// <summary>
         /// The name of the country the location is in.
@@ -61,6 +73,13 @@ namespace ShopifySharp
         /// </summary>
         [JsonProperty("phone")]
         public string Phone { get; set; }
+
+        /// <summary>
+        /// Whether this is a fulfillment service location. If true, then the location is a fulfillment service location. 
+        /// If false, then the location was created by the merchant and isn't tied to a fulfillment service.
+        /// </summary>
+        [JsonProperty("legacy")]
+        public bool? Legacy { get; set; }
 
         /// <summary>
         /// The date and time when the location was created.
