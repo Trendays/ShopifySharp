@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.4;net45</TargetFrameworks>
+    <TargetFramework>net45</TargetFramework>
     <AssemblyName>ShopifySharp</AssemblyName>
     <RootNamespace>ShopifySharp</RootNamespace>
-    <Version>4.16.1</Version>
+    <Version>4.16.2.11</Version>
   </PropertyGroup>
   <PropertyGroup>
     <Description>ShopifySharp is a C# and .NET library that helps developers easily authenticate with and manage Shopify stores.</Description>
@@ -13,9 +13,16 @@
     <PackageProjectUrl>https://github.com/nozzlegear/shopifysharp</PackageProjectUrl>
     <RepositoryUrl>https://github.com/nozzlegear/shopifysharp</RepositoryUrl>
     <PackageTags>shopify,ecommerce</PackageTags>
+    <PackageId>Trendays.ShopifySharp</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="microsoft.extensions.primitives" Version="1.1.0" />
+    <Compile Remove="Services\Authorization\AuthorizationService.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="newtonsoft.json" Version="10.0.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Net.Http" />
   </ItemGroup>
 </Project>
