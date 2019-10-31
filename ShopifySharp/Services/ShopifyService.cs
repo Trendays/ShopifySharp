@@ -28,6 +28,8 @@ namespace ShopifySharp
 
         protected string _AccessToken { get; set; }
 
+        public string LastResponseBody { get; private set; }
+
         protected virtual bool SupportsAPIVersioning => true;
 
         /// <summary>
@@ -144,6 +146,8 @@ namespace ShopifySharp
                         //Check for and throw exception when necessary.
                         CheckResponseExceptions(response, rawResult);
 
+                        LastResponseBody = rawResult;
+
                         JToken jtoken = null;
 
                         // Don't parse the result when the request was Delete.
@@ -185,6 +189,8 @@ namespace ShopifySharp
 
                         //Check for and throw exception when necessary.
                         CheckResponseExceptions(response, rawResult);
+
+                        LastResponseBody = rawResult;
 
                         // This method may fail when the method was Delete, which is intendend.
                         // Delete methods should not be parsing the response JSON and should instead
