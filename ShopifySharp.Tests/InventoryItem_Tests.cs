@@ -37,15 +37,18 @@ namespace ShopifySharp.Tests
         [Fact]
         public async Task Updates_Item()
         {
-            var created = await Fixture.Service.GetAsync( Fixture.Created.First().InventoryItemId.Value );
+            var created = await Fixture.Service.GetAsync(Fixture.Created.First().InventoryItemId.Value);
             long id = created.Id.Value;
             string sku = "Some Updated sku";
+            decimal cost = 42.42m;
 
             created.SKU = sku;
+            created.Cost = cost;
 
-            var updated = await Fixture.Service.UpdateAsync( id, created );
+            var updated = await Fixture.Service.UpdateAsync(id, created);
 
-            Assert.Equal( sku, updated.SKU );
+            Assert.Equal(sku, updated.SKU);
+            Assert.Equal(cost, updated.Cost);
         }
     }
 
@@ -63,6 +66,11 @@ namespace ShopifySharp.Tests
 
         public async Task InitializeAsync()
         {
+            var policy = new SmartRetryExecutionPolicy();
+
+            Service.SetExecutionPolicy(policy);
+            VariantService.SetExecutionPolicy(policy);
+
             // Get a product id to use with these tests.
             ProductId = (await new ProductService(Utils.MyShopifyUrl, Utils.AccessToken).ListAsync(new ProductFilter()
             {
@@ -77,9 +85,9 @@ namespace ShopifySharp.Tests
         {
             foreach (var obj in Created)
             {
-                if (! obj.Id.HasValue) 
+                if (!obj.Id.HasValue)
                 {
-                    continue; 
+                    continue;
                 }
 
                 try
@@ -109,7 +117,7 @@ namespace ShopifySharp.Tests
                 SKU = "Some sku"
             });
 
-            if (! skipAddToCreatedList)
+            if (!skipAddToCreatedList)
             {
                 Created.Add(obj);
             }

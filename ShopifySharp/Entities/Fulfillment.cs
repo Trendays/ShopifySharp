@@ -44,7 +44,7 @@ namespace ShopifySharp
         /// The unique identifier of the location that the fulfillment should be processed for.
         /// </summary>
         [JsonProperty("location_id")]
-        public string LocationId { get; set; }
+        public long? LocationId { get; set; }
 
 
         /// <summary>
@@ -123,5 +123,8 @@ namespace ShopifySharp
         /// This property is undocumented by Shopify.
         /// </summary>
         public string ShipmentStatus { get; set; }
+
+        [JsonProperty("name")]
+        public string Name { get; set; }
     }
 }

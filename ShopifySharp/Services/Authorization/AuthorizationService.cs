@@ -12,6 +12,8 @@ using ShopifySharp.Enums;
 using ShopifySharp.Infrastructure;
 using Microsoft.Extensions.Primitives;
 using System.Text.RegularExpressions;
+using System.Net.Http.Headers;
+using System.Reflection;
 
 namespace ShopifySharp
 {
@@ -47,9 +49,9 @@ namespace ShopifySharp
             {
                 return "";
             }
-      
-            // use standard url decoding, to match ruby Rack::Utils.parse_query(query_string)
-            string output = Uri.UnescapeDataString(s);
+
+            //Important: Replace % before replacing &. Else second replace will replace those %25s.
+            string output = (s.Replace("%", "%25").Replace("&", "%26")) ?? "";
 
             if (isKey)
             {
@@ -238,6 +240,31 @@ namespace ShopifySharp
         }
 
         /// <summary>
+        /// Determines if an incoming webhook request is authentic.
+        /// </summary>
+        /// <param name="requestHeaders">The request's headers.</param>
+        /// <param name="requestBody">The body of the request.</param>
+        /// <param name="shopifySecretKey">Your app's secret key.</param>
+        /// <returns>A boolean indicating whether the webhook is authentic or not.</returns>
+        public static bool IsAuthenticWebhook(HttpRequestHeaders requestHeaders, string requestBody, string shopifySecretKey)
+        {
+            var hmacHeaderValue = requestHeaders.FirstOrDefault(kvp => kvp.Key.Equals("X-Shopify-Hmac-SHA256", StringComparison.OrdinalIgnoreCase)).Value.FirstOrDefault();
+
+            if (string.IsNullOrEmpty(hmacHeaderValue))
+            {
+                return false;
+            }
+
+            //Compute a hash from the apiKey and the request body
+            string hmacHeader = hmacHeaderValue;
+            HMACSHA256 hmac = new HMACSHA256(Encoding.UTF8.GetBytes(shopifySecretKey));
+            string hash = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(requestBody)));
+
+            //Webhook is valid if computed hash matches the header hash
+            return hash == hmacHeader;
+        }
+
+        /// <summary>
         /// A convenience function that tries to ensure that a given URL is a valid Shopify domain. It does this by making a HEAD request to the given domain, and returns true if the response contains an X-ShopId header.
         ///
         /// **Warning**: a domain could fake the response header, which would cause this method to return true.
@@ -248,22 +275,27 @@ namespace ShopifySharp
         /// <returns>A boolean indicating whether the URL is valid.</returns>
         public static async Task<bool> IsValidShopDomainAsync(string url)
         {
-            var uri = ShopifyService.BuildShopUri(url, true);
+            var uri = ShopifyService.BuildShopUri(url, false);
 
-            using (var client = new HttpClient())
+            using (var handler = new HttpClientHandler
             {
-                using (var msg = new HttpRequestMessage(HttpMethod.Head, uri))
-                {
-                    try
-                    {
-                        var response = await client.SendAsync(msg);
+                AllowAutoRedirect = false
+            })
+            using (var client = new HttpClient(handler))
+            using (var msg = new HttpRequestMessage(HttpMethod.Head, uri))
+            {
+                var version = (typeof(AuthorizationService)).GetTypeInfo().Assembly.GetName().Version;
+                msg.Headers.Add("User-Agent", $"ShopifySharp v{version} (https://github.com/nozzlegear/shopifysharp)");
 
-                        return response.Headers.Any(h => h.Key.Equals("X-ShopId", StringComparison.OrdinalIgnoreCase));
-                    }
-                    catch (HttpRequestException)
-                    {
-                        return false;
-                    }
+                try
+                {
+                    var response = await client.SendAsync(msg);
+
+                    return response.Headers.Any(h => h.Key.Equals("X-ShopId", StringComparison.OrdinalIgnoreCase));
+                }
+                catch (HttpRequestException)
+                {
+                    return false;
                 }
             }
         }

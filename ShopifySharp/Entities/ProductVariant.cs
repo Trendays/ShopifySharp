@@ -35,8 +35,8 @@ namespace ShopifySharp
         /// <summary>
         /// The weight of the product variant in grams.
         /// </summary>
-        [JsonProperty("grams"), JsonConverter(typeof(NullToZeroConverter))]
-        public int? Grams { get; set; }
+        [JsonProperty("grams")]
+        public long? Grams { get; set; }
 
         /// <summary>
         /// Specifies whether or not customers are allowed to place an order for a product variant when it's out of stock. Known values are 'deny' and 'continue'.
@@ -111,6 +111,12 @@ namespace ShopifySharp
         public bool? Taxable { get; set; }
 
         /// <summary>
+        /// Specifies a tax code which is used for Avalara tax integrations
+        /// </summary>
+        [JsonProperty("tax_code")]
+        public string TaxCode { get; set; }
+
+        /// <summary>
         /// Specifies whether or not a customer needs to provide a shipping address when placing an order for this product variant.
         /// </summary>
         [JsonProperty("requires_shipping")]
@@ -165,10 +171,16 @@ namespace ShopifySharp
 
         /// <summary>
         /// Additional metadata about the <see cref="ProductVariant"/>. Note: This is not naturally returned with a <see cref="ProductVariant"/> response, as
-        /// Shopify will not return <see cref="ProductVariant"/> metafields unless specified. Instead, you need to query metafields with <see cref="MetaFieldService"/>. 
+        /// Shopify will not return <see cref="ProductVariant"/> metafields unless specified. Instead, you need to query metafields with <see cref="MetaFieldService"/>.
         /// Uses include: Creating, updating, & deserializing webhook bodies that include them.
         /// </summary>
         [JsonProperty("metafields")]
         public IEnumerable<MetaField> Metafields { get; set; }
+
+        /// <summary>
+        /// A list of the variant's presentment prices and compare-at prices in each of the shop's enabled presentment currencies
+        /// </summary>
+        [JsonProperty("presentment_prices")]
+        public IEnumerable<PresentmentPrice> PresentmentPrices { get; set; }
     }
 }

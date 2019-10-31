@@ -99,6 +99,12 @@ namespace ShopifySharp
         public string CustomerLocale { get; set; }
 
         /// <summary>
+        /// The unique numeric identifier of the POS device used.
+        /// </summary>
+        [JsonProperty("device_id")]
+        public long? DeviceId { get; set; }
+
+        /// <summary>
         /// Applicable discount codes that can be applied to the order.
         /// </summary>
         [JsonProperty("discount_codes")]
@@ -278,6 +284,12 @@ namespace ShopifySharp
         /// </summary>
         [JsonProperty("taxes_included")]
         public bool? TaxesIncluded { get; set; }
+
+        /// <summary>
+        /// States whether this is a test order.
+        /// </summary>
+        [JsonProperty("test")]
+        public bool? Test { get; set; }
 
         /// <summary>
         /// Unique identifier for a particular order.

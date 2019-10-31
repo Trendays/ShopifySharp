@@ -14,6 +14,12 @@ namespace ShopifySharp
         /// The index of the associated discount application in the order's discount_applications list.
         /// </summary>
         [JsonProperty("discount_application_index")]
-        public int DiscountApplicationIndex { get; set; }
+        public long DiscountApplicationIndex { get; set; }
+
+        /// <summary>
+        /// The discount amount allocated to the line item in shop and presentment currencies.
+        /// </summary>
+        [JsonProperty("amount_set")]
+        public PriceSet AmountSet { get; set; }
     }
 }

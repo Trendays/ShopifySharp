@@ -9,6 +9,12 @@ namespace ShopifySharp
     public class Location : ShopifyObject
     {
         /// <summary>
+        /// Whether the location is active.
+        /// </summary>
+        [JsonProperty("active")]
+        public bool? Active { get; set; }
+
+        /// <summary>
         /// The name of the location.
         /// </summary>
         [JsonProperty("name")]
@@ -51,6 +57,12 @@ namespace ShopifySharp
         public string ProvinceCode { get; set; }
 
         /// <summary>
+        /// The code of the province the location is in.
+        /// </summary>
+        [JsonProperty("province_code")]
+        public string ProvinceCode { get; set; }
+
+        /// <summary>
         /// The country the location is in.
         /// </summary>
         [JsonProperty("country")]
@@ -67,6 +79,12 @@ namespace ShopifySharp
         /// </summary>
         [JsonProperty("country_name")]
         public string CountryName { get; set; }
+
+        /// <summary>
+        /// The code of the country the location is in.
+        /// </summary>
+        [JsonProperty("country_code")]
+        public string CountryCode { get; set; }
 
         /// <summary>
         /// The phone number of the location. Can contain special chars like - and +.
@@ -92,5 +110,11 @@ namespace ShopifySharp
         /// </summary>
         [JsonProperty("updated_at")]
         public DateTimeOffset? UpdatedAt { get; set; }
+
+        /// <summary>
+        /// Whether this is a fulfillment service location. If true, then the location is a fulfillment service location. If false, then the location was created by the merchant and isn't tied to a fulfillment service.
+        /// </summary>
+        [JsonProperty("legacy")]
+        public bool? Legacy { get; set; }
     }
 }

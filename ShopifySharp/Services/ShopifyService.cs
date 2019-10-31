@@ -14,17 +14,21 @@ namespace ShopifySharp
 {
     public abstract class ShopifyService
     {
+        public virtual string APIVersion => "2019-04";
+
         private static IRequestExecutionPolicy _GlobalExecutionPolicy = new DefaultRequestExecutionPolicy();
 
-        private static JsonSerializer _Serializer = new JsonSerializer { DateParseHandling = DateParseHandling.DateTimeOffset };
+        private IRequestExecutionPolicy _ExecutionPolicy;
+
+        private static JsonSerializer _Serializer = Serializer.JsonSerializer;
 
         private static HttpClient _Client { get; } = new HttpClient();
-
-        private IRequestExecutionPolicy _ExecutionPolicy;
 
         protected Uri _ShopUri { get; set; }
 
         protected string _AccessToken { get; set; }
+
+        protected virtual bool SupportsAPIVersioning => true;
 
         /// <summary>
         /// Creates a new instance of <see cref="ShopifyService" />.
@@ -95,7 +99,7 @@ namespace ShopifySharp
             {
                 Scheme = "https:",
                 Port = 443,
-                Path = $"admin/{path}"
+                Path = SupportsAPIVersioning ? $"admin/api/{APIVersion}/{path}" : $"admin/{path}"
             };
 
             return new RequestUri(ub.Uri);
@@ -145,7 +149,11 @@ namespace ShopifySharp
                         // Don't parse the result when the request was Delete.
                         if (baseRequestMessage.Method != HttpMethod.Delete)
                         {
-                            jtoken = JToken.Parse(rawResult);
+                            // Make sure that dates are not stripped of any timezone information if tokens are de-serialised into strings/DateTime/DateTimeZoneOffset
+                            using (var reader = new JsonTextReader(new StringReader(rawResult)) { DateParseHandling = DateParseHandling.None })
+                            {
+                                jtoken = JObject.Load(reader);
+                            }
                         }
 
                         return new RequestResult<JToken>(response, jtoken, rawResult);
@@ -227,27 +235,48 @@ namespace ShopifySharp
                 throw new ShopifyRateLimitException(code, rateLimitErrors, rateLimitMessage, rawResponse, requestId);
             }
 
-            var errors = ParseErrorJson(rawResponse);
-            string message = $"Response did not indicate success. Status: {(int)code} {response.ReasonPhrase}.";
+            var contentType = response.Content.Headers.GetValues("Content-Type").FirstOrDefault();
+            var defaultMessage = $"Response did not indicate success. Status: {(int)code} {response.ReasonPhrase}.";
 
-            if (errors == null)
+            if (contentType.StartsWithIgnoreCase("application/json") || contentType.StartsWithIgnoreCase("text/json"))
             {
-                errors = new Dictionary<string, IEnumerable<string>>()
-                    {
+                var errors = ParseErrorJson(rawResponse);
+                string message = defaultMessage;
+
+                if (errors == null)
+                {
+                    errors = new Dictionary<string, IEnumerable<string>>()
                         {
-                            $"{(int)code} {response.ReasonPhrase}",
-                            new string[] { message }
-                        },
-                    };
+                            {
+                                $"{(int)code} {response.ReasonPhrase}",
+                                new string[] { message }
+                            },
+                        };
+                }
+                else
+                {
+                    var firstError = errors.First();
+
+                    message = $"{firstError.Key}: {string.Join(", ", firstError.Value)}";
+                }
+
+                throw new ShopifyException(code, errors, message, rawResponse, requestId);
             }
-            else
             {
-                var firstError = errors.First();
+                var errors = new Dictionary<string, IEnumerable<string>>
+                {
+                    {
+                        $"{(int)code} {response.ReasonPhrase}",
+                        new string[] { defaultMessage }
+                    },
+                    {
+                        "NoJsonError",
+                        new string[] { "Response did not return JSON, unable to parse error message (if any)." }
+                    }
+                };
 
-                message = $"{firstError.Key}: {string.Join(", ", firstError.Value)}";
+                throw new ShopifyException(code, errors, defaultMessage, rawResponse, requestId);
             }
-
-            throw new ShopifyException(code, errors, message, rawResponse, requestId);
         }
 
         /// <summary>
